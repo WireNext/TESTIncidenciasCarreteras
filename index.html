@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mapa de Incidentes DGT</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-sA+e2bI+z+jHKXQeo4psR0tY+80X3oT6bNlnT9f+ztM="
+    crossorigin=""
+  />
+  <style>
+    #map { height: 100vh; width: 100vw; }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-o9N1jLpm+kT8DbTvkH2pcPH9cVHX0hT0bK38AzCu30o="
+  crossorigin=""
+></script>
+
+<script>
+  // URL de tu GeoJSON en GitHub (pon aquí tu link raw)
+  const geojsonURL = "TU_LINK_RAW_DE_GITHUB.geojson";
+
+  // Iconos personalizados según tipo de incidente
+  const icons = {
+    obras: L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/512/1673/1673321.png',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -32],
+    }),
+    inundacion: L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/512/3079/3079250.png',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -32],
+    }),
+    corte: L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/512/854/854878.png',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -32],
+    }),
+    default: L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/512/565/565547.png',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -32],
+    }),
+  };
+
+  // Función para elegir icono según descripción
+  function getIcon(description) {
+    const desc = description.toLowerCase();
+
+    if (desc.includes("obra") || desc.includes("construcción")) return icons.obras;
+    if (desc.includes("inundación") || desc.includes("flooding")) return icons.inundacion;
+    if (desc.includes("corte") || desc.includes("roadclosed") || desc.includes("cerrado")) return icons.corte;
+    return icons.default;
+  }
+
+  // Crear el mapa centrado en España
+  const map = L.map('map').setView([40.4, -3.7], 6);
+
+  // Añadir capa base (OpenStreetMap)
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  // Cargar GeoJSON y añadirlo al mapa
+  fetch(geojsonURL)
+    .then(response => response.json())
+    .then(data => {
+      L.geoJSON(data, {
+        pointToLayer: function(feature, latlng) {
+          // Obtener descripción para elegir icono
+          const description = feature.properties.description || "";
+          return L.marker(latlng, { icon: getIcon(description) });
+        },
+        onEachFeature: function(feature, layer) {
+          if (feature.properties && feature.properties.description) {
+            layer.bindPopup(feature.properties.description);
+          }
+        }
+      }).addTo(map);
+    })
+    .catch(error => {
+      console.error("Error cargando el GeoJSON:", error);
+      alert("No se pudo cargar el GeoJSON.");
+    });
+</script>
+
+</body>
+</html>
