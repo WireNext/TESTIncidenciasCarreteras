@@ -108,7 +108,7 @@
           const description = feature.properties.description || "";
 
           // Extraer texto dentro de <b>Impacto:</b> ...<br>
-          const match = description.match(/<b>Impacto:<\/b>\s*(.*?)<br>/i);
+          const match = description.match(/<b>Impacto:\s*<\/b>\s*(.*?)<br>/i);
           let impactText = match ? match[1].toLowerCase() : "medio";
 
 // Clasificar impacto por contenido
