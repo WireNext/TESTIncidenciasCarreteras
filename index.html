@@ -77,9 +77,40 @@
     .then(data => {
       L.geoJSON(data, {
         pointToLayer: function(feature, latlng) {
-          // Obtener descripción para elegir icono
           const description = feature.properties.description || "";
-          return L.marker(latlng, { icon: getIcon(description) });
+          const impact = (feature.properties.impact || "medio").toLowerCase(); // default medio
+
+          // Color del círculo según impacto
+          let bgColor = "#ffa500"; // medio
+          if (impact === "bajo") bgColor = "#4caf50";  // verde
+          if (impact === "alto") bgColor = "#f44336";  // rojo
+
+          const iconUrl = getIcon(description).options.iconUrl;
+
+          const html = `
+            <div style="
+              background-color: ${bgColor};
+              border-radius: 50%;
+              width: 48px;
+              height: 48px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              box-shadow: 0 0 3px #0005;
+            ">
+              <img src="${iconUrl}" style="width: 28px; height: 28px;" />
+            </div>
+          `;
+
+          const icon = L.divIcon({
+            html: html,
+            className: '', // importante: sin estilos por defecto
+            iconSize: [48, 48],
+            iconAnchor: [24, 48],
+            popupAnchor: [0, -48],
+          });
+
+          return L.marker(latlng, { icon });
         },
         onEachFeature: function(feature, layer) {
           if (feature.properties && feature.properties.description) {
