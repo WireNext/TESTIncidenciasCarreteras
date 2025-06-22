@@ -113,11 +113,11 @@
 
 // Clasificar impacto por contenido
           let impact = "medio";
-          if (impactText.includes("Imposible circular") || impactText.includes("Corte Total")) {
+          if (impactText.includes("imposible circular") || impactText.includes("corte Total")) {
             impact = "cierre";
-          } else if (impactText.includes("Retención") || impactText.includes("Congestionada")) {
+          } else if (impactText.includes("retención") || impactText.includes("congestionada")) {
             impact = "alto";
-          } else if (impactText.includes("Sin retención") || impactText.includes("Fluido")) {
+          } else if (impactText.includes("sin retención") || impactText.includes("fluido")) {
             impact = "bajo";
           }
 
