@@ -108,12 +108,15 @@
           let impact = "medio";
           if (impactText.includes("sin retención") || impactText.includes("fluido")) impact = "bajo";
           else if (impactText.includes("retención") || impactText.includes("importante")) impact = "alto";
+          else if (impactText.includes("Imposible circular") || impactText.includes("impossible")) impact = "cierre";
+
 
 
           // Color del círculo según impacto
           let bgColor = "#ffa500"; // medio
           if (impact === "bajo") bgColor = "#4caf50";  // verde
-          if (impact === "alto") bgColor = "#f44336";  // rojo
+          if (impact === "alto") bgColor = "##ff9900";  // rojo
+          if (impact === "cierre") bgColor = "#f44336";  // rojo
 
           const iconUrl = getIcon(description).options.iconUrl;
 
