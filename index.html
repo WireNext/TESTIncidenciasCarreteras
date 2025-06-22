@@ -62,6 +62,12 @@
       iconAnchor: [16, 32],
       popupAnchor: [0, -32],
     }),
+    objetocarretera: L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/128/16491/16491534.png',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -32],
+    }),
     default: L.icon({
       iconUrl: 'https://cdn-icons-png.flaticon.com/128/76/76402.png',
       iconSize: [32, 32],
@@ -80,6 +86,7 @@
     if (desc.includes("vehiculo averiado") || desc.includes("damagedVehicle")) return icons.averiacoche;
     if (desc.includes("vehiculo parado") || desc.includes("vehicleStuck")) return icons.cocheparado;
     if (desc.includes("vehiculo en llamas") || desc.includes("vehicleOnFire")) return icons.cochellamas;
+    if (desc.includes("objeto en calzada") || desc.includes("objectOnTheRoad")) return icons.objetocarretera;
     return icons.default;
   }
 
@@ -100,26 +107,30 @@
         pointToLayer: function(feature, latlng) {
           const description = feature.properties.description || "";
 
-// Extraer texto dentro de <b>Impacto:</b> ...<br>
+          // Extraer texto dentro de <b>Impacto:</b> ...<br>
           const match = description.match(/<b>Impacto:<\/b>\s*(.*?)<br>/i);
           let impactText = match ? match[1].toLowerCase() : "medio";
 
-          // Clasificar impacto por contenido
+// Clasificar impacto por contenido
           let impact = "medio";
-          if (impactText.includes("imposible circular") || impactText.includes("impossible")) impact = "cierre";
-          else if (impactText.includes("retención") || impactText.includes("importante")) impact = "alto";
-          else if (impactText.includes("sin retención") || impactText.includes("fluido")) impact = "bajo";
+          if (impactText.includes("imposible circular") || impactText.includes("impossible")) {
+            impact = "cierre";
+          } else if (impactText.includes("retención") || impactText.includes("importante")) {
+            impact = "alto";
+          } else if (impactText.includes("sin retención") || impactText.includes("fluido")) {
+            impact = "bajo";
+          }
 
-
-
-          // Color del círculo según impacto
+// Color del círculo según impacto
           let bgColor = "#ffa500"; // medio
-          if (impact === "bajo") bgColor = "#4caf50";  // verde
-          if (impact === "alto") bgColor = "#ff9900";  // naranja
-          if (impact === "cierre") bgColor = "#f44336";  // rojo
+          if (impact === "bajo") bgColor = "#4caf50";   // verde
+          else if (impact === "alto") bgColor = "#ff9900"; // naranja
+          else if (impact === "cierre") bgColor = "#f44336"; // rojo
 
+// Obtener solo la URL del icono
           const iconUrl = getIcon(description).options.iconUrl;
 
+// Crear HTML para el divIcon
           const html = `
             <div style="
               background-color: ${bgColor};
@@ -135,14 +146,16 @@
             </div>
           `;
 
+// Crear el icono personalizado
           const icon = L.divIcon({
             html: html,
-            className: '', // importante: sin estilos por defecto
+            className: '', // sin estilos por defecto de Leaflet
             iconSize: [48, 48],
             iconAnchor: [24, 48],
             popupAnchor: [0, -48],
           });
 
+// Devolver el marcador con el icono
           return L.marker(latlng, { icon });
         },
         onEachFeature: function(feature, layer) {
