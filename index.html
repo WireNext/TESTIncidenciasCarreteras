@@ -27,25 +27,43 @@
   // Iconos personalizados según tipo de incidente
   const icons = {
     obras: L.icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/512/1673/1673321.png',
+      iconUrl: 'https://cdn-icons-png.flaticon.com/128/3586/3586685.png',
       iconSize: [32, 32],
       iconAnchor: [16, 32],
       popupAnchor: [0, -32],
     }),
     inundacion: L.icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/512/3079/3079250.png',
+      iconUrl: 'https://cdn-icons-png.flaticon.com/128/11570/11570413.png',
       iconSize: [32, 32],
       iconAnchor: [16, 32],
       popupAnchor: [0, -32],
     }),
-    corte: L.icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/512/854/854878.png',
+    caidapiedra: L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/128/3937/3937185.png',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -32],
+    }),
+    averiacoche: L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/128/4805/4805526.png',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -32],
+    }),
+    cocheparado: L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/128/13850/13850964.png',
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+      popupAnchor: [0, -32],
+    }),
+    cochellamas: L.icon({
+      iconUrl: 'https://cdn-icons-png.flaticon.com/128/10142/10142673.png',
       iconSize: [32, 32],
       iconAnchor: [16, 32],
       popupAnchor: [0, -32],
     }),
     default: L.icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/512/565/565547.png',
+      iconUrl: 'https://cdn-icons-png.flaticon.com/128/76/76402.png',
       iconSize: [32, 32],
       iconAnchor: [16, 32],
       popupAnchor: [0, -32],
@@ -58,7 +76,10 @@
 
     if (desc.includes("obra") || desc.includes("construcción")) return icons.obras;
     if (desc.includes("inundación") || desc.includes("flooding")) return icons.inundacion;
-    if (desc.includes("corte") || desc.includes("roadclosed") || desc.includes("cerrado")) return icons.corte;
+    if (desc.includes("Caida de piedras") || desc.includes("rockfalls") || desc.includes("piedras")) return icons.caidapiedra;
+    if (desc.includes("Vehículo Averiado") || desc.includes("damagedVehicle")) return icons.averiacoche;
+    if (desc.includes("Vehículo Parado") || desc.includes("vehicleStuck")) return icons.cocheparado;
+    if (desc.includes("Vehiculo en llamas") || desc.includes("vehicleOnFire")) return icons.cochellamas;
     return icons.default;
   }
 
