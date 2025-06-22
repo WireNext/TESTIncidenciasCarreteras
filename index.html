@@ -78,7 +78,16 @@
       L.geoJSON(data, {
         pointToLayer: function(feature, latlng) {
           const description = feature.properties.description || "";
-          const impact = (feature.properties.impact || "medio").toLowerCase(); // default medio
+
+// Extraer texto dentro de <b>Impacto:</b> ...<br>
+          const match = description.match(/<b>Impacto:<\/b>\s*(.*?)<br>/i);
+          let impactText = match ? match[1].toLowerCase() : "medio";
+
+// Clasificar impacto por contenido
+          let impact = "medio";
+          if (impactText.includes("sin retención") || impactText.includes("fluido")) impact = "bajo";
+          else if (impactText.includes("retención") || impactText.includes("importante")) impact = "alto";
+
 
           // Color del círculo según impacto
           let bgColor = "#ffa500"; // medio
