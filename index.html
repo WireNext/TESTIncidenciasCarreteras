@@ -113,12 +113,12 @@
 
 // Clasificar impacto por contenido
           let impact = "medio";
-          if (impactText.includes("imposible circular") || impactText.includes("corte total")) {
-            impact = "cierre";
+           if (impactText.includes("sin retención") || impactText.includes("fluido")) {
+            impact = "bajo";
           } else if (impactText.includes("retención") || impactText.includes("congestionada")) {
             impact = "alto";
-          } else if (impactText.includes("sin retención") || impactText.includes("fluido")) {
-            impact = "bajo";
+          } else if (impactText.includes("imposible circular") || impactText.includes("corte total")) {
+            impact = "cierre";
           }
 
 // Color del círculo según impacto
