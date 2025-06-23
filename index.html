@@ -4,10 +4,7 @@
   <meta charset="UTF-8" />
   <title>Mapa de Incidentes DGT</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     #map { height: 100vh; width: 100vw; }
   </style>
@@ -16,15 +13,11 @@
 
 <div id="map"></div>
 
-<script
-  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-  // URL de tu GeoJSON en GitHub (pon aquí tu link raw)
   const geojsonURL = "https://raw.githubusercontent.com/WireNext/TESTIncidenciasCarreteras/main/traffic_data.geojson";
 
-  // Iconos personalizados según tipo de incidente
   const icons = {
     obras: L.icon({
       iconUrl: 'https://cdn-icons-png.flaticon.com/128/3586/3586685.png',
@@ -76,10 +69,8 @@
     }),
   };
 
-  // Función para elegir icono según descripción
   function getIcon(description) {
     const desc = description.toLowerCase();
-
     if (desc.includes("obra") || desc.includes("construcción")) return icons.obras;
     if (desc.includes("inundación") || desc.includes("flooding")) return icons.inundacion;
     if (desc.includes("caida de piedras") || desc.includes("rockfalls") || desc.includes("piedras")) return icons.caidapiedra;
@@ -90,16 +81,13 @@
     return icons.default;
   }
 
-  // Crear el mapa centrado en España
   const map = L.map('map').setView([40.4, -3.7], 6);
 
-  // Añadir capa base (OpenStreetMap)
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 18,
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
-  // Cargar GeoJSON y añadirlo al mapa
   fetch(geojsonURL)
     .then(response => response.json())
     .then(data => {
@@ -107,13 +95,11 @@
         pointToLayer: function(feature, latlng) {
           const description = feature.properties.description || "";
 
-          // Extraer texto dentro de <b>Impacto:</b> ...<br>
           const match = description.match(/<b>\s*Impacto:\s*<\/b>\s*(.*?)<br>/i);
           let impactText = match ? match[1].toLowerCase() : "medio";
 
-// Clasificar impacto por contenido
           let impact = "medio";
-           if (impactText.includes("sin retención") || impactText.includes("fluido")) {
+          if (impactText.includes("sin retención") || impactText.includes("fluido")) {
             impact = "bajo";
           } else if (impactText.includes("retención") || impactText.includes("congestionada")) {
             impact = "alto";
@@ -121,41 +107,36 @@
             impact = "cierre";
           }
 
-// Color del círculo según impacto
           let bgColor = "#20ba26";
-          if (impact === "bajo") bgColor = "#20ba26";   // verde
+          if (impact === "bajo") bgColor = "#20ba26";     // verde
           else if (impact === "alto") bgColor = "#ff9900"; // naranja
           else if (impact === "cierre") bgColor = "#f44336"; // rojo
 
-// Obtener solo la URL del icono
           const iconUrl = getIcon(description).options.iconUrl;
 
-// Crear HTML para el divIcon
           const html = `
             <div style="
               background-color: ${bgColor};
               border-radius: 50%;
-              width: 48px;
-              height: 48px;
+              width: 32px;
+              height: 32px;
               display: flex;
               align-items: center;
               justify-content: center;
-              box-shadow: 0 0 3px #0005;
+              box-shadow: 0 0 2px #0005;
             ">
-              <img src="${iconUrl}" style="width: 28px; height: 28px;" />
+              <img src="${iconUrl}" style="width: 20px; height: 20px;" />
             </div>
           `;
 
-// Crear el icono personalizado
           const icon = L.divIcon({
             html: html,
-            className: '', // sin estilos por defecto de Leaflet
-            iconSize: [48, 48],
-            iconAnchor: [24, 48],
-            popupAnchor: [0, -48],
+            className: '',
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32],
           });
 
-// Devolver el marcador con el icono
           return L.marker(latlng, { icon });
         },
         onEachFeature: function(feature, layer) {
