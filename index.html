@@ -17,6 +17,7 @@
 
 <script>
   const geojsonURL = "https://raw.githubusercontent.com/WireNext/TESTIncidenciasCarreteras/main/traffic_data.geojson";
+  const traficoValenciaURL = "https://raw.githubusercontent.com/WireNext/CarreterasValencia/refs/heads/main/trafico_valencia_umap.geojson";
 
   const icons = {
     obras: L.icon({
@@ -150,6 +151,41 @@
       console.error("Error cargando el GeoJSON:", error);
       alert("No se pudo cargar el GeoJSON.");
     });
+
+  fetch(traficoValenciaURL)
+  .then(response => response.json())
+  .then(data => {
+    L.geoJSON(data, {
+      style: function(feature) {
+        const estado = feature.properties.estado;
+        const estadoColores = {
+          0: "#00FF00",  // verde
+          1: "#FFA500",  // naranja
+          2: "#FF0000",
+          3: "#000000",  // negro
+          4: "#9b9b9b",
+          5: "#00FF00",
+          6: "#FFA500",
+          7: "#FF0000",
+          8: "#000000",
+          9: "#000000"
+        };
+
+        const color = estadoColores[estado] || "#808080";
+
+        return {
+          color: color,
+          weight: 4,
+          opacity: 0.9
+        };
+      },
+      onEachFeature: function(feature, layer) {
+        const nombre = feature.properties.denominacion || "Tramo sin nombre";
+        const estado = feature.properties.estado;
+        layer.bindPopup(`<strong>${nombre}</strong><br>Estado: ${estado}`);
+      }
+    }).addTo(map);
+  });
 </script>
 
 </body>
