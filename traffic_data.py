@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 import requests
 import json
 from datetime import datetime
+import time
 
 # Lista de regiones con sus respectivas URLs de archivos XML
 REGIONS = {
@@ -11,11 +12,11 @@ REGIONS = {
 }
 
 # Definir el espacio de nombres para el XML
-NS = {'_0': 'http://datex2.eu/schema/1_0/1_0',
-      'xsi': 'http://www.w3.org/2001/XMLSchema-instance'
-      }
+NS = {
+    '_0': 'http://datex2.eu/schema/1_0/1_0',
+    'xsi': 'http://www.w3.org/2001/XMLSchema-instance'
+}
 
-# Traducción de tipos de incidentes
 INCIDENT_TYPE_TRANSLATIONS = {
     "damagedVehicle": "Vehículo Averiado",
     "roadClosed": "Corte Total",
@@ -35,7 +36,6 @@ INCIDENT_TYPE_TRANSLATIONS = {
     "objectOnTheRoad": "Objeto en Calzada",
     "heavy": "Retención",
     "vehicleOnFire": "Vehiculo en llamas",
-    "narrowLanes": "Estrechamiento de carriles",
     "intermittentShortTermClosures": "Cortes intermitentes",
     "laneClosures": "Cierre de algún carril",
     "rockfalls": "Caida de piedras",
@@ -44,22 +44,18 @@ INCIDENT_TYPE_TRANSLATIONS = {
     "snowploughsInUse": "Quitanieves en la via",
     "snowfall": "Nieve en la via",
     "snowChainsMandatory": "Uso obligatorio de cadenas"
-    
 }
 
-# Función para traducir tipos de incidentes
 def translate_incident_type(value):
     return INCIDENT_TYPE_TRANSLATIONS.get(value, value)
 
-# Función para convertir la fecha y hora a un formato más bonito
 def format_datetime(datetime_str):
     try:
-        dt = datetime.fromisoformat(datetime_str)
+        dt = datetime.fromisoformat(datetime_str.replace('Z', '+00:00'))
         return dt.strftime("%d/%m/%Y - %H:%M:%S")
-    except ValueError:
+    except Exception:
         return datetime_str
 
-# Función para procesar un archivo XML desde una URL y extraer los datos necesarios
 def process_xml_from_url(url, region_name, all_incidents):
     try:
         response = requests.get(url)
@@ -68,145 +64,90 @@ def process_xml_from_url(url, region_name, all_incidents):
 
         for situation in root.findall(".//_0:situation", NS):
             situation_record = situation.find(".//_0:situationRecord", NS)
-
             if situation_record is not None:
                 description = []
                 
-                # Extraer la fecha de creación
-                creation_time = situation_record.find(".//_0:situationRecordCreationTime", NS)
-                if creation_time is not None:
-                    description.append(f"<b>Fecha de Creación:</b> {format_datetime(creation_time.text)}")
+                # --- EXTRACCIÓN DE DATOS PARA DESCRIPCIÓN ---
+                fields = [
+                    (".//_0:situationRecordCreationTime", "Fecha de Creación", format_datetime),
+                    (".//_0:obstructionType", "Tipo de Obstrucción", translate_incident_type),
+                    (".//_0:environmentalObstructionType", "Tipo de Obstrucción", translate_incident_type),
+                    (".//_0:vehicleObstructionType", "Tipo de Incidente", translate_incident_type),
+                    (".//_0:constructionWorkType", "Tipo de Incidente", translate_incident_type),
+                    (".//_0:directionRelative", "Dirección", translate_incident_type),
+                    (".//_0:networkManagementType", "Aviso", translate_incident_type),
+                    (".//_0:impactOnTraffic", "Impacto", translate_incident_type),
+                    (".//_0:roadNumber", "Carretera", None),
+                    (".//_0:poorEnvironmentType", "Tipo de Obstrucción", translate_incident_type),
+                    (".//_0:roadMaintenanceType", "Tipo de Obstrucción", translate_incident_type),
+                    (".//_0:equipmentRequirement", "Tipo de Obstrucción", translate_incident_type),
+                ]
 
-                # Extraer el tipo de obstrucción
-                obstructionType = situation_record.find(".//_0:obstructionType", NS)
-                if obstructionType is not None:
-                    obstruction_type = translate_incident_type(obstructionType.text)
-                    description.append(f"<b>Tipo de Obstrucción:</b> {obstruction_type}")
-                
-                # Extraer el tipo de obstrucción ambiental
-                environmental_obstruction = situation_record.find(".//_0:environmentalObstructionType", NS)
-                if environmental_obstruction is not None:
-                    obstruction_type = translate_incident_type(environmental_obstruction.text)
-                    description.append(f"<b>Tipo de Obstrucción:</b> {obstruction_type}")
+                for path, label, func in fields:
+                    elem = situation_record.find(path, NS)
+                    if elem is not None and elem.text:
+                        val = func(elem.text) if func else elem.text
+                        description.append(f"<b>{label}:</b> {val}")
 
-                # Extraer el tipo de incidente
-                vehicle_obstruction_type = situation_record.find(".//_0:vehicleObstructionType", NS)
-                if vehicle_obstruction_type is not None:
-                    incident_type  = translate_incident_type(vehicle_obstruction_type.text)
-                    description.append(f"<b>Tipo de Incidente:</b> {incident_type}")
-
-                # Extraer la construccion
-                construction = situation_record.find(".//_0:constructionWorkType", NS)
-                if construction is not None:
-                    construction = translate_incident_type(construction.text)
-                    description.append(f"<b>Tipo de Incidente </b> {construction}")
-
-                # Extraer la dirección
-                direction = situation_record.find(".//_0:directionRelative", NS)
-                if direction is not None:
-                    direction = translate_incident_type(direction.text)
-                    description.append(f"<b>Dirección:</b> {direction}")
-
-                # Extraer aviso
-                lane = situation_record.find(".//_0:networkManagementType", NS)
-                if lane is not None and lane.text:
-                    warning_translated = translate_incident_type(lane.text)
-                    description.append(f"<b>Aviso: </b> {warning_translated}")
-
-                # Extraer impacto
-                impact = situation_record.find(".//_0:impactOnTraffic", NS)
-                if impact is not None:
-                    impact = translate_incident_type(impact.text)
-                    description.append(f"<b>Impacto: </b> {impact}")
-                
-                # Extraer la carretera
-                road_number = situation_record.find(".//_0:roadNumber", NS)
-                if road_number is not None:
-                    description.append(f"<b>Carretera:</b> {road_number.text}")
-
-                # Extraer el punto kilométrico
-                point_km = situation_record.find(".//_0:referencePointDistance", NS)
-                if point_km is not None:
-                    description.append(f"<b>Punto Kilométrico:</b> {float(point_km.text) / 1000:.1f} km")
-
-                poor_environmental_type = situation_record.find(".//_0:poorEnvironmentType", NS)
-                if poor_environmental_type is not None:
-                    poor_environmental_type = translate_incident_type(poor_environmental_type.text)
-                    description.append(f"<b>Tipo de Obstrucción:</b> {poor_environmental_type}")
-
-                road_maintenance_Type = situation_record.find(".//_0:roadMaintenanceType", NS)
-                if road_maintenance_Type is not None:
-                    road_maintenance_Type = translate_incident_type(road_maintenance_Type.text)
-                    description.append(f"<b>Tipo de Obstrucción:</b> {road_maintenance_Type}")
-
-                equipment_requirement = situation_record.find(".//_0:equipmentRequirement", NS)
-                if equipment_requirement is not None:
-                    equipment_requirement = translate_incident_type(equipment_requirement.text)
-                    description.append(f"<b>Tipo de Obstrucción:</b> {equipment_requirement}")
+                pk = situation_record.find(".//_0:referencePointDistance", NS)
+                if pk is not None:
+                    description.append(f"<b>Punto Kilométrico:</b> {float(pk.text) / 1000:.1f} km")
 
                 geometry = None
 
-                # 2. INTENTO A: ¿Es un tramo lineal?
-                linear_location = situation_record.find(".//_0:locationContainedInGroup", NS)
-                if linear_location is not None and "{http://www.w3.org/2001/XMLSchema-instance}type" in linear_location.attrib:
-                    if "_0:Linear" in linear_location.attrib["{http://www.w3.org/2001/XMLSchema-instance}type"]:
-                        from_pt = linear_location.find(".//_0:from//_0:pointCoordinates", NS)
-                        to_pt = linear_location.find(".//_0:to//_0:pointCoordinates", NS)
+                # --- LÓGICA DE GEOMETRÍA ---
+                
+                # 1. Intentar Tramo Lineal (Curvado con OSRM)
+                linear_loc = situation_record.find(".//_0:locationContainedInGroup", NS)
+                if linear_loc is not None:
+                    xsi_type = linear_loc.get("{http://www.w3.org/2001/XMLSchema-instance}type")
+                    if xsi_type and "_0:Linear" in xsi_type:
+                        from_pt = linear_loc.find(".//_0:from//_0:pointCoordinates", NS)
+                        to_pt = linear_loc.find(".//_0:to//_0:pointCoordinates", NS)
                         
                         if from_pt is not None and to_pt is not None:
-                            lon_f = from_pt.find("_0:longitude", NS).text
-                            lat_f = from_pt.find("_0:latitude", NS).text
-                            lon_t = to_pt.find("_0:longitude", NS).text
-                            lat_t = to_pt.find("_0:latitude", NS).text
+                            lon_f, lat_f = from_pt.find("_0:longitude", NS).text, from_pt.find("_0:latitude", NS).text
+                            lon_t, lat_t = to_pt.find("_0:longitude", NS).text, to_pt.find("_0:latitude", NS).text
                             
-                            geometry = {
-                                "type": "LineString",
-                                "coordinates": [[float(lon_f), float(lat_f)], [float(lon_t), float(lat_t)]]
-                            }
+                            # Llamada a OSRM para seguir las curvas de la carretera
+                            osrm_url = f"http://router.project-osrm.org/route/v1/driving/{lon_f},{lat_f};{lon_t},{lat_t}?overview=full&geometries=geojson"
+                            try:
+                                r = requests.get(osrm_url, timeout=5)
+                                data = r.json()
+                                if data.get("routes"):
+                                    geometry = data["routes"][0]["geometry"]
+                                else:
+                                    geometry = {"type": "LineString", "coordinates": [[float(lon_f), float(lat_f)], [float(lon_t), float(lat_t)]]}
+                                time.sleep(0.1) # Respetar API gratuita
+                            except:
+                                geometry = {"type": "LineString", "coordinates": [[float(lon_f), float(lat_f)], [float(lon_t), float(lat_t)]]}
 
-                # 3. INTENTO B: Si no se encontró tramo, usamos tu código de punto (EL QUE PREGUNTAS)
+                # 2. Si no es lineal, intentar Punto único
                 if geometry is None:
-                    location = situation_record.find(".//_0:pointCoordinates", NS)
-                    if location is not None:
-                        latitude = location.find(".//_0:latitude", NS)
-                        longitude = location.find(".//_0:longitude", NS)
-                        if latitude is not None and longitude is not None:
-                            geometry = {
-                                "type": "Point",
-                                "coordinates": [float(longitude.text), float(latitude.text)]
-                            }
+                    point_loc = situation_record.find(".//_0:pointCoordinates", NS)
+                    if point_loc is not None:
+                        lat = point_loc.find("_0:latitude", NS)
+                        lon = point_loc.find("_0:longitude", NS)
+                        if lat is not None and lon is not None:
+                            geometry = {"type": "Point", "coordinates": [float(lon.text), float(lat.text)]}
 
-                # 4. Finalmente, si conseguimos cualquiera de las dos, guardamos el incidente
+                # Guardar incidente
                 if geometry:
-                    incident = {
+                    all_incidents.append({
                         "type": "Feature",
-                        "properties": {
-                            "description": "<br>".join(description)
-                        },
+                        "properties": {"description": "<br>".join(description)},
                         "geometry": geometry
-                    }
-                    all_incidents.append(incident)
+                    })
 
     except Exception as e:
-        print(f"Error procesando {region_name} desde {url}: {e}")
+        print(f"Error procesando {region_name}: {e}")
 
-# Lista para almacenar todos los incidentes
 all_incidents = []
+for name, url in REGIONS.items():
+    print(f"Procesando: {name}")
+    process_xml_from_url(url, name, all_incidents)
 
-# Procesar todos los archivos XML de las regiones especificadas
-for region_name, url in REGIONS.items():
-    print(f"\nProcesando región: {region_name} desde {url}")
-    process_xml_from_url(url, region_name, all_incidents)
+with open("traffic_data.geojson", "w", encoding='utf-8') as f:
+    json.dump({"type": "FeatureCollection", "features": all_incidents}, f, indent=2, ensure_ascii=False)
 
-# Crear el archivo GeoJSON con todos los incidentes
-geojson_data = {
-    "type": "FeatureCollection",
-    "features": all_incidents
-}
-
-# Guardar el archivo GeoJSON
-geojson_file = "traffic_data.geojson"
-with open(geojson_file, "w") as f:
-    json.dump(geojson_data, f, indent=2, ensure_ascii=False)
-
-print(f"\nArchivo GeoJSON global generado con éxito: {geojson_file}")
+print("GeoJSON generado con éxito.")

@@ -93,9 +93,9 @@
           if (feature.geometry.type === 'LineString') {
             return {
               color: getImpactColor(feature.properties.description),
-              weight: 7,
-              opacity: 0.7,
-              lineCap: 'round'
+              weight: 6,       // Un poco más gruesa para que se vea la curva
+              opacity: 0.8,
+              lineJoin: 'round' // Suaviza las uniones en las curvas cerradas
             };
           }
         },
