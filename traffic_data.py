@@ -131,6 +131,21 @@ def process_xml_from_url(url, region_name, all_incidents):
                 if point_km is not None:
                     description.append(f"<b>Punto Kilométrico:</b> {float(point_km.text) / 1000:.1f} km")
 
+                poor_environmental_type = situation_record.find(".//_0:poorEnvironmentType", NS)
+                if poor_environmental_type is not None:
+                    poor_environmental_type = translate_incident_type(poor_environmental_type.text)
+                    description.append(f"<b>Tipo de Obstrucción:</b> {poor_environmental_type}")
+
+                road_maintenance_Type = situation_record.find(".//_0:roadMaintenanceType", NS)
+                if road_maintenance_Type is not None:
+                    road_maintenance_Type = translate_incident_type(road_maintenance_Type.text)
+                    description.append(f"<b>Tipo de Obstrucción:</b> {road_maintenance_Type}")
+
+                equipment_requirement = situation_record.find(".//_0:equipmentRequirement", NS)
+                if equipment_requirement is not None:
+                    equipment_requirement = translate_incident_type(equipment_requirement.text)
+                    description.append(f"<b>Tipo de Obstrucción:</b> {equipment_requirement}")
+
                 # Extraer la ubicación
                 location = situation_record.find(".//_0:pointCoordinates", NS)
                 if location is not None:
