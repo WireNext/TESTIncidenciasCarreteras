@@ -43,7 +43,9 @@ INCIDENT_TYPE_TRANSLATIONS = {
     "laneOrCarriagewayClosed": "Arcen cerrado",
     "snowploughsInUse": "Quitanieves en la via",
     "snowfall": "Nieve en la via",
-    "snowChainsMandatory": "Uso obligatorio de cadenas"
+    "snowChainsMandatory": "Uso obligatorio de cadenas",
+    "rain": "lluvia",
+    "MaintenanceWorks": "Trabajos de mantenimiento"
 }
 
 def translate_incident_type(value):
@@ -118,7 +120,7 @@ def process_xml_from_url(url, region_name, all_incidents):
                                     geometry = data["routes"][0]["geometry"]
                                 else:
                                     geometry = {"type": "LineString", "coordinates": [[float(lon_f), float(lat_f)], [float(lon_t), float(lat_t)]]}
-                                time.sleep(0.1) # Respetar API gratuita
+                                time.sleep(0.5) # Respetar API gratuita
                             except:
                                 geometry = {"type": "LineString", "coordinates": [[float(lon_f), float(lat_f)], [float(lon_t), float(lat_t)]]}
 
