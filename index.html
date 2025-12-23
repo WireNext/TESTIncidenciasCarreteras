@@ -44,6 +44,7 @@
     if (desc.includes("averiado") || desc.includes("damaged")) return "car_crash";
     if (desc.includes("parado") || desc.includes("stuck")) return "auto_towing";
     if (desc.includes("llamas") || desc.includes("fuego")) return "local_fire_department";
+    if (desc.includes("nieve") || desc.includes("cadenas") || desc.includes("quitanieves") || desc.includes("snowfall")) return "ac_unit";
     if (desc.includes("objeto")) return "remove_road"; // O "warning"
     return "warning"; // Icono por defecto
   }
@@ -70,6 +71,7 @@
           
           let bgColor = "#ff9900"; // Naranja por defecto (medio)
           if (impactText.includes("sin retención") || impactText.includes("fluido")) bgColor = "#20ba26"; // Verde
+          if (impactText.includes("Congestionada") || impactText.includes("retención")) bgColor = "#ff9900"; // Verde
           if (impactText.includes("imposible") || impactText.includes("corte")) bgColor = "#f44336"; // Rojo
 
           const iconName = getIconName(description);

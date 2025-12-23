@@ -24,6 +24,7 @@ INCIDENT_TYPE_TRANSLATIONS = {
     "both": "Ambos Sentidos",
     "negative": "Decreciente",
     "positive": "Creciente",
+    "useOfSpecifiedLaneAllowed": "Uso especifico de carril",
     "useUnderSpecifiedRestrictions": "Uso con restricciones",
     "congested": "Congestionada",
     "freeFlow": "Sin retención",
