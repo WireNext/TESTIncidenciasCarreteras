@@ -44,7 +44,7 @@ INCIDENT_TYPE_TRANSLATIONS = {
     "snowploughsInUse": "Quitanieves en la via",
     "snowfall": "Nieve en la via",
     "snowChainsMandatory": "Uso obligatorio de cadenas",
-    "rain": "lluvia",
+    "rain": "Lluvia",
     "MaintenanceWorks": "Trabajos de mantenimiento"
 }
 
@@ -83,6 +83,7 @@ def process_xml_from_url(url, region_name, all_incidents):
                     (".//_0:poorEnvironmentType", "Tipo de Obstrucción", translate_incident_type),
                     (".//_0:roadMaintenanceType", "Tipo de Obstrucción", translate_incident_type),
                     (".//_0:equipmentRequirement", "Tipo de Obstrucción", translate_incident_type),
+                    (".//_0:poorEnvironmentType", "Tipo de Obstrucción", translate_incident_type),
                 ]
 
                 for path, label, func in fields:
