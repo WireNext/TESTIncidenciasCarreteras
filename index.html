@@ -5,8 +5,14 @@
   <title>Mapa de Incidentes DGT</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+  
   <style>
     #map { height: 100vh; width: 100vw; }
+    /* Ajuste opcional para que los grupos se vean integrados */
+    .marker-cluster-small { background-color: rgba(181, 226, 140, 0.6); }
+    .marker-cluster-small div { background-color: rgba(110, 204, 57, 0.6); }
   </style>
 </head>
 <body>
@@ -14,63 +20,24 @@
 <div id="map"></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 
 <script>
   const geojsonURL = "https://raw.githubusercontent.com/WireNext/TESTIncidenciasCarreteras/main/traffic_data.geojson";
   const traficoValenciaURL = "https://raw.githubusercontent.com/WireNext/CarreterasValencia/refs/heads/main/trafico_valencia_umap.geojson";
 
   const icons = {
-    obras: L.icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/128/3586/3586685.png',
-      iconSize: [32, 32],
-      iconAnchor: [16, 32],
-      popupAnchor: [0, -32],
-    }),
-    inundacion: L.icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/128/11570/11570413.png',
-      iconSize: [32, 32],
-      iconAnchor: [16, 32],
-      popupAnchor: [0, -32],
-    }),
-    caidapiedra: L.icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/128/3937/3937185.png',
-      iconSize: [32, 32],
-      iconAnchor: [16, 32],
-      popupAnchor: [0, -32],
-    }),
-    averiacoche: L.icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/128/4805/4805526.png',
-      iconSize: [32, 32],
-      iconAnchor: [16, 32],
-      popupAnchor: [0, -32],
-    }),
-    cocheparado: L.icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/128/13850/13850964.png',
-      iconSize: [32, 32],
-      iconAnchor: [16, 32],
-      popupAnchor: [0, -32],
-    }),
-    cochellamas: L.icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/128/10142/10142673.png',
-      iconSize: [32, 32],
-      iconAnchor: [16, 32],
-      popupAnchor: [0, -32],
-    }),
-    objetocarretera: L.icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/128/16491/16491534.png',
-      iconSize: [32, 32],
-      iconAnchor: [16, 32],
-      popupAnchor: [0, -32],
-    }),
-    default: L.icon({
-      iconUrl: 'https://cdn-icons-png.flaticon.com/128/76/76402.png',
-      iconSize: [32, 32],
-      iconAnchor: [16, 32],
-      popupAnchor: [0, -32],
-    }),
+    obras: 'https://cdn-icons-png.flaticon.com/128/3586/3586685.png',
+    inundacion: 'https://cdn-icons-png.flaticon.com/128/11570/11570413.png',
+    caidapiedra: 'https://cdn-icons-png.flaticon.com/128/3937/3937185.png',
+    averiacoche: 'https://cdn-icons-png.flaticon.com/128/4805/4805526.png',
+    cocheparado: 'https://cdn-icons-png.flaticon.com/128/13850/13850964.png',
+    cochellamas: 'https://cdn-icons-png.flaticon.com/128/10142/10142673.png',
+    objetocarretera: 'https://cdn-icons-png.flaticon.com/128/16491/16491534.png',
+    default: 'https://cdn-icons-png.flaticon.com/128/76/76402.png',
   };
 
-  function getIcon(description) {
+  function getIconUrl(description) {
     const desc = description.toLowerCase();
     if (desc.includes("obra") || desc.includes("construcción")) return icons.obras;
     if (desc.includes("inundación") || desc.includes("flooding")) return icons.inundacion;
@@ -89,13 +56,15 @@
     attribution: '&copy; OpenStreetMap contributors'
   }).addTo(map);
 
+  // Inicializar el grupo de clusters
+  const markers = L.markerClusterGroup();
+
   fetch(geojsonURL)
     .then(response => response.json())
     .then(data => {
-      L.geoJSON(data, {
+      const geojsonLayer = L.geoJSON(data, {
         pointToLayer: function(feature, latlng) {
           const description = feature.properties.description || "";
-
           const match = description.match(/<b>\s*Impacto:\s*<\/b>\s*(.*?)<br>/i);
           let impactText = match ? match[1].toLowerCase() : "medio";
 
@@ -109,33 +78,35 @@
           }
 
           let bgColor = "#20ba26";
-          if (impact === "bajo") bgColor = "#20ba26";     // verde
-          else if (impact === "alto") bgColor = "#ff9900"; // naranja
-          else if (impact === "cierre") bgColor = "#f44336"; // rojo
+          if (impact === "bajo") bgColor = "#20ba26";
+          else if (impact === "alto") bgColor = "#ff9900";
+          else if (impact === "cierre") bgColor = "#f44336";
 
-          const iconUrl = getIcon(description).options.iconUrl;
+          const iconUrl = getIconUrl(description);
 
+          // Burbuja más pequeña: 26px el círculo, 16px la imagen
           const html = `
             <div style="
               background-color: ${bgColor};
               border-radius: 50%;
-              width: 32px;
-              height: 32px;
+              width: 26px;
+              height: 26px;
               display: flex;
               align-items: center;
               justify-content: center;
-              box-shadow: 0 0 2px #0005;
+              box-shadow: 0 0 4px rgba(0,0,0,0.3);
+              border: 1.5px solid white;
             ">
-              <img src="${iconUrl}" style="width: 20px; height: 20px;" />
+              <img src="${iconUrl}" style="width: 16px; height: 16px;" />
             </div>
           `;
 
           const icon = L.divIcon({
             html: html,
             className: '',
-            iconSize: [32, 32],
-            iconAnchor: [16, 32],
-            popupAnchor: [0, -32],
+            iconSize: [26, 26],
+            iconAnchor: [13, 26],
+            popupAnchor: [0, -26],
           });
 
           return L.marker(latlng, { icon });
@@ -145,47 +116,34 @@
             layer.bindPopup(feature.properties.description);
           }
         }
-      }).addTo(map);
+      });
+
+      // Añadir la capa GeoJSON al cluster y el cluster al mapa
+      markers.addLayer(geojsonLayer);
+      map.addLayer(markers);
     })
-    .catch(error => {
-      console.error("Error cargando el GeoJSON:", error);
-      alert("No se pudo cargar el GeoJSON.");
-    });
+    .catch(error => console.error("Error:", error));
 
+  // Capa de Valencia (Líneas) - Se mantiene igual ya que son líneas, no puntos
   fetch(traficoValenciaURL)
-  .then(response => response.json())
-  .then(data => {
-    L.geoJSON(data, {
-      style: function(feature) {
-        const estado = feature.properties.estado;
-        const estadoColores = {
-          0: "#00FF00",  // verde
-          1: "#FFA500",  // naranja
-          2: "#FF0000",
-          3: "#000000",  // negro
-          4: "#9b9b9b",
-          5: "#00FF00",
-          6: "#FFA500",
-          7: "#FF0000",
-          8: "#000000",
-          9: "#000000"
-        };
-
-        const color = estadoColores[estado] || "#808080";
-
-        return {
-          color: color,
-          weight: 4,
-          opacity: 0.9
-        };
-      },
-      onEachFeature: function(feature, layer) {
-        const nombre = feature.properties.denominacion || "Tramo sin nombre";
-        const estado = feature.properties.estado;
-        layer.bindPopup(`<strong>${nombre}</strong><br>Estado: ${estado}`);
-      }
-    }).addTo(map);
-  });
+    .then(response => response.json())
+    .then(data => {
+      L.geoJSON(data, {
+        style: function(feature) {
+          const estado = feature.properties.estado;
+          const estadoColores = {
+            0: "#00FF00", 1: "#FFA500", 2: "#FF0000", 3: "#000000",
+            4: "#9b9b9b", 5: "#00FF00", 6: "#FFA500", 7: "#FF0000",
+            8: "#000000", 9: "#000000"
+          };
+          return { color: estadoColores[estado] || "#808080", weight: 4, opacity: 0.9 };
+        },
+        onEachFeature: function(feature, layer) {
+          const nombre = feature.properties.denominacion || "Tramo sin nombre";
+          layer.bindPopup(`<strong>${nombre}</strong><br>Estado: ${feature.properties.estado}`);
+        }
+      }).addTo(map);
+    });
 </script>
 
 </body>
