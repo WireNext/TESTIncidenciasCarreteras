@@ -63,10 +63,16 @@
 
   function getIconName(description) {
     const desc = description.toLowerCase();
-    if (desc.includes("obra")) return "engineering";
+    if (desc.includes("obra")) return "construction";
     if (desc.includes("nieve")) return "ac_unit";
-    if (desc.includes("averiado")) return "car_repair";
+    if (desc.includes("averiado")) return "car_crash";
     if (desc.includes("fuego")) return "local_fire_department";
+    if (desc.includes("inunciación")) return "flood";
+    if (desc.includes("objeto")) return "remove_road";
+    if (desc.includes("piedras")) return "landslide";
+    if (desc.includes("lluvia")) return "rainy";
+    if (desc.includes("niebla")) return "foggy";
+
     return "warning";
   }
 

@@ -45,7 +45,8 @@ INCIDENT_TYPE_TRANSLATIONS = {
     "snowfall": "Nieve en la via",
     "snowChainsMandatory": "Uso obligatorio de cadenas",
     "rain": "Lluvia",
-    "MaintenanceWorks": "Trabajos de mantenimiento"
+    "MaintenanceWorks": "Trabajos de mantenimiento",
+    "fog": "Niebla"
 }
 
 def translate_incident_type(value):
