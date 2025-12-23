@@ -28,7 +28,7 @@ INCIDENT_TYPE_TRANSLATIONS = {
     "congested": "Congestionada",
     "freeFlow": "Sin retención",
     "constructionWork": "Obras",
-    "impossible": "Imposible circular",
+    "impossible": "Carretera Cortada",
     "objectOnTheRoad": "Objeto en Calzada",
     "heavy": "Retención",
     "vehicleOnFire": "Vehiculo en llamas",
@@ -37,7 +37,10 @@ INCIDENT_TYPE_TRANSLATIONS = {
     "laneClosures": "Cierre de algún carril",
     "rockfalls": "Caida de piedras",
     "trafficContolInOperation": "Itinerario alternativo",
-    "laneOrCarriagewayClosed": "Arcen cerrado"
+    "laneOrCarriagewayClosed": "Arcen cerrado",
+    "snowploughsInUse": "Quitanieves en la via",
+    "snowfall": "Nieve en la via",
+    "snowChainsMandatory": "Uso obligatorio de cadenas"
     
 }
 

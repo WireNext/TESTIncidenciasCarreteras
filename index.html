@@ -38,13 +38,13 @@
   // Mapeo de descripciones a Nombres de Iconos de Google
   function getIconName(description) {
     const desc = description.toLowerCase();
-    if (desc.includes("obra") || desc.includes("construcción")) return "construction";
+    if (desc.includes("obra") || desc.includes("construcción")) return "front_loader";
     if (desc.includes("inundación") || desc.includes("agua") || desc.includes("flooding")) return "flood";
-    if (desc.includes("piedras") || desc.includes("caida")) return "terrain";
-    if (desc.includes("averiado") || desc.includes("damaged")) return "car_repair";
-    if (desc.includes("parado") || desc.includes("stuck")) return "report_problem";
+    if (desc.includes("piedras") || desc.includes("caida")) return "landslide";
+    if (desc.includes("averiado") || desc.includes("damaged")) return "car_crash";
+    if (desc.includes("parado") || desc.includes("stuck")) return "auto_towing";
     if (desc.includes("llamas") || desc.includes("fuego")) return "local_fire_department";
-    if (desc.includes("objeto")) return "shopping_basket"; // O "warning"
+    if (desc.includes("objeto")) return "remove_road"; // O "warning"
     return "warning"; // Icono por defecto
   }
 
