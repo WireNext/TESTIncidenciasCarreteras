@@ -97,11 +97,12 @@ def process_xml_from_url(url, region_name, all_incidents):
                 if pk is not None:
                     description.append(f"<b>Punto Kilométrico:</b> {float(pk.text) / 1000:.1f} km")
 
-                geometry = None
+                final_description = "<br>".join(description)
+                geometry_found = False
 
                 # --- LÓGICA DE GEOMETRÍA ---
                 
-                # 1. Intentar Tramo Lineal (Curvado con OSRM)
+                # 1. Intentar Tramo Lineal (Línea + Gota de aviso)
                 linear_loc = situation_record.find(".//_0:locationContainedInGroup", NS)
                 if linear_loc is not None:
                     xsi_type = linear_loc.get("{http://www.w3.org/2001/XMLSchema-instance}type")
@@ -110,38 +111,56 @@ def process_xml_from_url(url, region_name, all_incidents):
                         to_pt = linear_loc.find(".//_0:to//_0:pointCoordinates", NS)
                         
                         if from_pt is not None and to_pt is not None:
+                            geometry_found = True
                             lon_f, lat_f = from_pt.find("_0:longitude", NS).text, from_pt.find("_0:latitude", NS).text
                             lon_t, lat_t = to_pt.find("_0:longitude", NS).text, to_pt.find("_0:latitude", NS).text
                             
-                            # Llamada a OSRM para seguir las curvas de la carretera
                             osrm_url = f"http://router.project-osrm.org/route/v1/driving/{lon_f},{lat_f};{lon_t},{lat_t}?overview=full&geometries=geojson"
                             try:
                                 r = requests.get(osrm_url, timeout=5)
                                 data = r.json()
                                 if data.get("routes"):
-                                    geometry = data["routes"][0]["geometry"]
-                                else:
-                                    geometry = {"type": "LineString", "coordinates": [[float(lon_f), float(lat_f)], [float(lon_t), float(lat_t)]]}
-                                time.sleep(0.5) # Respetar API gratuita
-                            except:
-                                geometry = {"type": "LineString", "coordinates": [[float(lon_f), float(lat_f)], [float(lon_t), float(lat_t)]]}
+                                    full_geometry = data["routes"][0]["geometry"]
+                                    
+                                    # AÑADIMOS LA LÍNEA
+                                    all_incidents.append({
+                                        "type": "Feature",
+                                        "properties": {"description": final_description},
+                                        "geometry": full_geometry
+                                    })
 
-                # 2. Si no es lineal, intentar Punto único
-                if geometry is None:
+                                    # AÑADIMOS LA GOTA (en el punto medio de la línea calculada)
+                                    coords = full_geometry["coordinates"]
+                                    mid_point = coords[len(coords)//2]
+                                    all_incidents.append({
+                                        "type": "Feature",
+                                        "properties": {"description": final_description},
+                                        "geometry": {"type": "Point", "coordinates": mid_point}
+                                    })
+                                else:
+                                    # Fallback a línea recta si falla OSRM
+                                    straight_line = [[float(lon_f), float(lat_f)], [float(lon_t), float(lat_t)]]
+                                    all_incidents.append({
+                                        "type": "Feature",
+                                        "properties": {"description": final_description},
+                                        "geometry": {"type": "LineString", "coordinates": straight_line}
+                                    })
+                                time.sleep(0.5)
+                            except:
+                                pass
+
+                # 2. Si no es lineal, añadir como Punto único normal
+                if not geometry_found:
                     point_loc = situation_record.find(".//_0:pointCoordinates", NS)
                     if point_loc is not None:
                         lat = point_loc.find("_0:latitude", NS)
                         lon = point_loc.find("_0:longitude", NS)
                         if lat is not None and lon is not None:
-                            geometry = {"type": "Point", "coordinates": [float(lon.text), float(lat.text)]}
-
-                # Guardar incidente
-                if geometry:
-                    all_incidents.append({
-                        "type": "Feature",
-                        "properties": {"description": "<br>".join(description)},
-                        "geometry": geometry
-                    })
+                            all_incidents.append({
+                                "type": "Feature",
+                                "properties": {"description": final_description},
+                                "geometry": {"type": "Point", "coordinates": [float(lon.text), float(lat.text)]}
+                            })
 
     except Exception as e:
         print(f"Error procesando {region_name}: {e}")
