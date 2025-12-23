@@ -4,11 +4,24 @@
   <meta charset="UTF-8" />
   <title>Mapa de Incidentes DGT</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+  
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
   <style>
     #map { height: 100vh; width: 100vw; }
+    
+    /* Estilo para que el icono de Google se centre perfectamente */
+    .incident-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white; /* El icono será blanco sobre el fondo de color */
+      font-size: 16px !important;
+    }
   </style>
 </head>
 <body>
@@ -22,35 +35,24 @@
   const geojsonURL = "https://raw.githubusercontent.com/WireNext/TESTIncidenciasCarreteras/main/traffic_data.geojson";
   const traficoValenciaURL = "https://raw.githubusercontent.com/WireNext/CarreterasValencia/refs/heads/main/trafico_valencia_umap.geojson";
 
-  // Cambiado: Ahora solo guardamos los enlaces de las imágenes
-  const icons = {
-    obras: 'https://cdn-icons-png.flaticon.com/128/3586/3586685.png',
-    inundacion: 'https://cdn-icons-png.flaticon.com/128/11570/11570413.png',
-    caidapiedra: 'https://cdn-icons-png.flaticon.com/128/3937/3937185.png',
-    averiacoche: 'https://cdn-icons-png.flaticon.com/128/4805/4805526.png',
-    cocheparado: 'https://cdn-icons-png.flaticon.com/128/13850/13850964.png',
-    cochellamas: 'https://cdn-icons-png.flaticon.com/128/10142/10142673.png',
-    objetocarretera: 'https://cdn-icons-png.flaticon.com/128/16491/16491534.png',
-    default: 'https://cdn-icons-png.flaticon.com/128/76/76402.png',
-  };
-
-  function getIconUrl(description) {
+  // Mapeo de descripciones a Nombres de Iconos de Google
+  function getIconName(description) {
     const desc = description.toLowerCase();
-    if (desc.includes("obra") || desc.includes("construcción")) return icons.obras;
-    if (desc.includes("inundación") || desc.includes("flooding")) return icons.inundacion;
-    if (desc.includes("caida de piedras") || desc.includes("rockfalls") || desc.includes("piedras")) return icons.caidapiedra;
-    if (desc.includes("vehiculo averiado") || desc.includes("damagedvehicle")) return icons.averiacoche;
-    if (desc.includes("vehiculo parado") || desc.includes("vehiclestuck")) return icons.cocheparado;
-    if (desc.includes("vehiculo en llamas") || desc.includes("vehicleonfire")) return icons.cochellamas;
-    if (desc.includes("objeto en calzada") || desc.includes("objectontheroad")) return icons.objetocarretera;
-    return icons.default;
+    if (desc.includes("obra") || desc.includes("construcción")) return "construction";
+    if (desc.includes("inundación") || desc.includes("agua") || desc.includes("flooding")) return "flood";
+    if (desc.includes("piedras") || desc.includes("caida")) return "terrain";
+    if (desc.includes("averiado") || desc.includes("damaged")) return "car_repair";
+    if (desc.includes("parado") || desc.includes("stuck")) return "report_problem";
+    if (desc.includes("llamas") || desc.includes("fuego")) return "local_fire_department";
+    if (desc.includes("objeto")) return "shopping_basket"; // O "warning"
+    return "warning"; // Icono por defecto
   }
 
   const map = L.map('map').setView([40.4, -3.7], 6);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 18,
-    attribution: '&copy; OpenStreetMap contributors'
+    attribution: '&copy; OpenStreetMap'
   }).addTo(map);
 
   const markers = L.markerClusterGroup();
@@ -62,42 +64,39 @@
         pointToLayer: function(feature, latlng) {
           const description = feature.properties.description || "";
           
-          // Lógica de color de impacto
+          // Lógica de color según impacto
           const match = description.match(/<b>\s*Impacto:\s*<\/b>\s*(.*?)<br>/i);
           let impactText = match ? match[1].toLowerCase() : "medio";
-          let bgColor = "#20ba26"; // Verde por defecto
+          
+          let bgColor = "#ff9900"; // Naranja por defecto (medio)
+          if (impactText.includes("sin retención") || impactText.includes("fluido")) bgColor = "#20ba26"; // Verde
+          if (impactText.includes("imposible") || impactText.includes("corte")) bgColor = "#f44336"; // Rojo
 
-          if (impactText.includes("sin retención") || impactText.includes("fluido")) bgColor = "#20ba26";
-          else if (impactText.includes("retención") || impactText.includes("congestionada")) bgColor = "#ff9900";
-          else if (impactText.includes("imposible circular") || impactText.includes("corte total")) bgColor = "#f44336";
-          else if (impactText.includes("medio")) bgColor = "#ffd700"; // Amarillo para impacto medio
+          const iconName = getIconName(description);
 
-          const iconUrl = getIconUrl(description);
-
-          // Burbuja ajustada y centrada
+          // Diseño de la burbuja (más pequeña: 24px)
           const html = `
             <div style="
               background-color: ${bgColor};
               border-radius: 50%;
-              width: 28px;
-              height: 28px;
+              width: 24px;
+              height: 24px;
               display: flex;
               align-items: center;
               justify-content: center;
-              box-shadow: 0 0 5px rgba(0,0,0,0.4);
-              border: 2px solid white;
+              border: 1.5px solid white;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.3);
             ">
-              <img src="${iconUrl}" style="width: 18px; height: 18px; object-fit: contain;" />
+              <span class="material-icons" style="font-size: 16px; color: white;">${iconName}</span>
             </div>
           `;
 
           return L.marker(latlng, {
             icon: L.divIcon({
               html: html,
-              className: '',
-              iconSize: [28, 28],
-              iconAnchor: [14, 28],
-              popupAnchor: [0, -28]
+              className: 'incident-icon',
+              iconSize: [24, 24],
+              iconAnchor: [12, 12]
             })
           });
         },
@@ -111,14 +110,14 @@
       map.addLayer(markers);
     });
 
-  // Mantener capa de Valencia igual
+  // Capa Valencia
   fetch(traficoValenciaURL)
-    .then(response => response.json())
+    .then(res => res.json())
     .then(data => {
       L.geoJSON(data, {
-        style: (f) => ({ 
-            color: {0:"#00FF00", 1:"#FFA500", 2:"#FF0000", 3:"#000000"}[f.properties.estado] || "#808080", 
-            weight: 4 
+        style: (f) => ({
+          color: {0:"#00FF00", 1:"#FFA500", 2:"#FF0000", 3:"#000000"}[f.properties.estado] || "#808080",
+          weight: 3
         })
       }).addTo(map);
     });
