@@ -2,25 +2,28 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Mapa de Incidentes DGT</title>
+  <title>Mapa de Incidentes DGT - Tiempo Real</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
-  
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
   <style>
+    body { margin: 0; padding: 0; }
     #map { height: 100vh; width: 100vw; }
     
-    /* Estilo para que el icono de Google se centre perfectamente */
     .incident-icon {
       display: flex;
       align-items: center;
       justify-content: center;
-      color: white; /* El icono será blanco sobre el fondo de color */
-      font-size: 16px !important;
+    }
+
+    /* Estilo del Popup */
+    .leaflet-popup-content {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.4;
     }
   </style>
 </head>
@@ -32,23 +35,40 @@
 <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 
 <script>
+  // URLs de los datos
   const geojsonURL = "https://raw.githubusercontent.com/WireNext/TESTIncidenciasCarreteras/main/traffic_data.geojson";
   const traficoValenciaURL = "https://raw.githubusercontent.com/WireNext/CarreterasValencia/refs/heads/main/trafico_valencia_umap.geojson";
 
-  // Mapeo de descripciones a Nombres de Iconos de Google
-  function getIconName(description) {
+  // 1. Lógica centralizada de colores según el impacto
+  function getImpactColor(description) {
     const desc = description.toLowerCase();
-    if (desc.includes("obra") || desc.includes("construcción")) return "front_loader";
-    if (desc.includes("inundación") || desc.includes("agua") || desc.includes("flooding")) return "flood";
-    if (desc.includes("piedras") || desc.includes("caida")) return "landslide";
-    if (desc.includes("averiado") || desc.includes("damaged")) return "car_crash";
-    if (desc.includes("parado") || desc.includes("stuck")) return "auto_towing";
-    if (desc.includes("llamas") || desc.includes("fuego")) return "local_fire_department";
-    if (desc.includes("nieve") || desc.includes("cadenas") || desc.includes("quitanieves") || desc.includes("snowfall")) return "ac_unit";
-    if (desc.includes("objeto")) return "remove_road"; // O "warning"
-    return "warning"; // Icono por defecto
+    // Rojo: Cortes o impacto extremo
+    if (desc.includes("imposible") || desc.includes("corte total") || desc.includes("carretera cortada") || desc.includes("cadenas")) {
+      return "#f44336";
+    }
+    // Verde: Fluido o sin problemas
+    if (desc.includes("sin retención") || desc.includes("fluido") || desc.includes("freeflow")) {
+      return "#20ba26";
+    }
+    // Naranja: Retenciones, obras o avisos (por defecto)
+    return "#ff9900";
   }
 
+  // 2. Mapeo de Iconos (Material Icons)
+  function getIconName(description) {
+    const desc = description.toLowerCase();
+    if (desc.includes("obra") || desc.includes("construcción")) return "engineering";
+    if (desc.includes("inundación") || desc.includes("agua") || desc.includes("flooding")) return "water_drop";
+    if (desc.includes("piedras") || desc.includes("caida") || desc.includes("rockfalls")) return "landscape";
+    if (desc.includes("averiado") || desc.includes("damaged")) return "car_repair";
+    if (desc.includes("parado") || desc.includes("stuck")) return "emergency_home";
+    if (desc.includes("llamas") || desc.includes("fuego") || desc.includes("fire")) return "local_fire_department";
+    if (desc.includes("nieve") || desc.includes("cadenas") || desc.includes("snowfall")) return "ac_unit";
+    if (desc.includes("objeto")) return "warning";
+    return "warning"; 
+  }
+
+  // Inicializar Mapa
   const map = L.map('map').setView([40.4, -3.7], 6);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -56,37 +76,47 @@
     attribution: '&copy; OpenStreetMap'
   }).addTo(map);
 
-  const markers = L.markerClusterGroup();
+  // Grupo de clusters para los iconos
+  const markers = L.markerClusterGroup({
+    disableClusteringAtZoom: 13,
+    spiderfyOnMaxZoom: true
+  });
 
+  // Cargar datos de la DGT
   fetch(geojsonURL)
     .then(response => response.json())
     .then(data => {
       const geojsonLayer = L.geoJSON(data, {
+        
+        // DIBUJAR LÍNEAS (Tramos de carretera)
+        style: function(feature) {
+          if (feature.geometry.type === 'LineString') {
+            return {
+              color: getImpactColor(feature.properties.description),
+              weight: 7,
+              opacity: 0.7,
+              lineCap: 'round'
+            };
+          }
+        },
+
+        // DIBUJAR PUNTOS (Iconos circulares)
         pointToLayer: function(feature, latlng) {
           const description = feature.properties.description || "";
-          
-          // Lógica de color según impacto
-          const match = description.match(/<b>\s*Impacto:\s*<\/b>\s*(.*?)<br>/i);
-          let impactText = match ? match[1].toLowerCase() : "medio";
-          
-          let bgColor = "#ff9900"; // Naranja por defecto (medio)
-          if (impactText.includes("sin retención") || impactText.includes("fluido")) bgColor = "#20ba26"; // Verde
-          if (impactText.includes("imposible") || impactText.includes("corte")) bgColor = "#f44336"; // Rojo
-
+          const bgColor = getImpactColor(description);
           const iconName = getIconName(description);
 
-          // Diseño de la burbuja (más pequeña: 24px)
           const html = `
             <div style="
               background-color: ${bgColor};
               border-radius: 50%;
-              width: 24px;
-              height: 24px;
+              width: 26px;
+              height: 26px;
               display: flex;
               align-items: center;
               justify-content: center;
-              border: 1.5px solid white;
-              box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+              border: 2px solid white;
+              box-shadow: 0 2px 5px rgba(0,0,0,0.4);
             ">
               <span class="material-icons" style="font-size: 16px; color: white;">${iconName}</span>
             </div>
@@ -96,32 +126,46 @@
             icon: L.divIcon({
               html: html,
               className: 'incident-icon',
-              iconSize: [24, 24],
-              iconAnchor: [12, 12]
+              iconSize: [26, 26],
+              iconAnchor: [13, 13]
             })
           });
         },
+
+        // POPUPS para ambos
         onEachFeature: function(feature, layer) {
           if (feature.properties && feature.properties.description) {
             layer.bindPopup(feature.properties.description);
           }
         }
       });
+
       markers.addLayer(geojsonLayer);
       map.addLayer(markers);
-    });
+    })
+    .catch(err => console.error("Error cargando DGT:", err));
 
-  // Capa Valencia
+  // Capa Valencia (Líneas de estado de tráfico urbano)
   fetch(traficoValenciaURL)
     .then(res => res.json())
     .then(data => {
       L.geoJSON(data, {
-        style: (f) => ({
-          color: {0:"#00FF00", 1:"#FFA500", 2:"#FF0000", 3:"#000000"}[f.properties.estado] || "#808080",
-          weight: 3
-        })
+        style: function(f) {
+          const estadoColores = {
+            0: "#00FF00", // fluido
+            1: "#FFA500", // denso
+            2: "#FF0000", // congestionado
+            3: "#000000"  // cortado
+          };
+          return {
+            color: estadoColores[f.properties.estado] || "#808080",
+            weight: 4,
+            opacity: 0.8
+          };
+        }
       }).addTo(map);
     });
+
 </script>
 
 </body>

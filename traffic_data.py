@@ -11,7 +11,9 @@ REGIONS = {
 }
 
 # Definir el espacio de nombres para el XML
-NS = {'_0': 'http://datex2.eu/schema/1_0/1_0'}
+NS = {'_0': 'http://datex2.eu/schema/1_0/1_0',
+      'xsi': 'http://www.w3.org/2001/XMLSchema-instance'
+      }
 
 # Traducción de tipos de incidentes
 INCIDENT_TYPE_TRANSLATIONS = {
@@ -60,20 +62,16 @@ def format_datetime(datetime_str):
 # Función para procesar un archivo XML desde una URL y extraer los datos necesarios
 def process_xml_from_url(url, region_name, all_incidents):
     try:
-        # Descargar el archivo XML desde la URL
         response = requests.get(url)
         response.raise_for_status()
-
-        # Parsear el contenido XML
         root = ET.fromstring(response.content)
 
-        # Procesar los incidentes en el archivo XML
         for situation in root.findall(".//_0:situation", NS):
             situation_record = situation.find(".//_0:situationRecord", NS)
 
             if situation_record is not None:
                 description = []
-
+                
                 # Extraer la fecha de creación
                 creation_time = situation_record.find(".//_0:situationRecordCreationTime", NS)
                 if creation_time is not None:
@@ -146,26 +144,48 @@ def process_xml_from_url(url, region_name, all_incidents):
                     equipment_requirement = translate_incident_type(equipment_requirement.text)
                     description.append(f"<b>Tipo de Obstrucción:</b> {equipment_requirement}")
 
-                # Extraer la ubicación
-                location = situation_record.find(".//_0:pointCoordinates", NS)
-                if location is not None:
-                    latitude = location.find(".//_0:latitude", NS)
-                    longitude = location.find(".//_0:longitude", NS)
-                    if latitude is not None and longitude is not None:
-                        coordinates = [float(longitude.text), float(latitude.text)]
+                geometry = None
 
-                        # Crear el incidente en formato GeoJSON
-                        incident = {
-                            "type": "Feature",
-                            "properties": {
-                                "description": "<br>".join(description)
-                            },
-                            "geometry": {
-                                "type": "Point",
-                                "coordinates": coordinates
+                # 2. INTENTO A: ¿Es un tramo lineal?
+                linear_location = situation_record.find(".//_0:locationContainedInGroup", NS)
+                if linear_location is not None and "{http://www.w3.org/2001/XMLSchema-instance}type" in linear_location.attrib:
+                    if "_0:Linear" in linear_location.attrib["{http://www.w3.org/2001/XMLSchema-instance}type"]:
+                        from_pt = linear_location.find(".//_0:from//_0:pointCoordinates", NS)
+                        to_pt = linear_location.find(".//_0:to//_0:pointCoordinates", NS)
+                        
+                        if from_pt is not None and to_pt is not None:
+                            lon_f = from_pt.find("_0:longitude", NS).text
+                            lat_f = from_pt.find("_0:latitude", NS).text
+                            lon_t = to_pt.find("_0:longitude", NS).text
+                            lat_t = to_pt.find("_0:latitude", NS).text
+                            
+                            geometry = {
+                                "type": "LineString",
+                                "coordinates": [[float(lon_f), float(lat_f)], [float(lon_t), float(lat_t)]]
                             }
-                        }
-                        all_incidents.append(incident)
+
+                # 3. INTENTO B: Si no se encontró tramo, usamos tu código de punto (EL QUE PREGUNTAS)
+                if geometry is None:
+                    location = situation_record.find(".//_0:pointCoordinates", NS)
+                    if location is not None:
+                        latitude = location.find(".//_0:latitude", NS)
+                        longitude = location.find(".//_0:longitude", NS)
+                        if latitude is not None and longitude is not None:
+                            geometry = {
+                                "type": "Point",
+                                "coordinates": [float(longitude.text), float(latitude.text)]
+                            }
+
+                # 4. Finalmente, si conseguimos cualquiera de las dos, guardamos el incidente
+                if geometry:
+                    incident = {
+                        "type": "Feature",
+                        "properties": {
+                            "description": "<br>".join(description)
+                        },
+                        "geometry": geometry
+                    }
+                    all_incidents.append(incident)
 
     except Exception as e:
         print(f"Error procesando {region_name} desde {url}: {e}")
